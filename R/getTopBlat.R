@@ -1,0 +1,40 @@
+getTopBlat <- function(tb, start, end, ntop = 5, adjustment = TRUE)
+{
+  # get hits covering the gap in question,
+  # with least number of gap openings and mismatches
+  tb <- tb[tb$q_start <= start & tb$q_end >= end, ]
+  if(nrow(tb) == 0){
+    return(data.frame())
+  }
+  tb <- tb[order(tb$gaps_open, tb$mismatches, decreasing = c(FALSE, FALSE)), ]
+  if(!is.null(ntop)){
+    toprank_stat <- tb[1:ntop, c("gaps_open", "mismatches")]
+  } else {
+    toprank_stat <- tb[, c("gaps_open", "mismatches")]
+  }
+  o <- NULL
+  if(!is.null(adjustment)){
+    if(adjustment){
+      tb$s_start <- apply(tb[, c("s_start", "s_end", "q_start")], MARGIN = 1, function(x){
+        if(x[2] > x[1]) x[1] + start - x[3]
+        else x[1] - start + x[3]
+      })
+      tb$s_end <- apply(tb[, c("s_start", "s_end", "q_end")], MARGIN = 1, function(x){
+        if(x[2] > x[1]) x[2] - x[3] + end
+        else x[2] + x[3] + end
+      })
+      o <- tb[which(tb$gaps_open %in% toprank_stat$gaps_open &
+                      tb$mismatches %in% toprank_stat$mismatches), c("subject", "s_start", "s_end", "mismatches", "gaps_open")]
+    }
+  }
+  if(is.null(o)){
+    o <- tb[which(tb$gaps_open %in% toprank_stat$gaps_open &
+                    tb$mismatches %in% toprank_stat$mismatches), c("subject", "s_start", "s_end", "q_start", "q_end",
+                                                                   "mismatches", "gaps_open")]
+  }
+  # if duplicate exists (ie multiple hits from the same pseudogene) remove the ones at the bottom
+  if(sum(duplicated(o$subject)) > 0){
+    o <- o[-which(duplicated(o$subject)), ]
+  }
+  o
+}
