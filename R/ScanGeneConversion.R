@@ -119,17 +119,9 @@ ScanGeneConversion <- function(seqname, repertoire, functional,
     edits <- getEditDistance(matches, query = repertoire[seqname],
                              subject = pseudogenes)
     fiveprime <- getIdenticalLength(matches, query = repertoire[seqname],
-                                    subject = pseudogenes, type = '5p', max_dist = 60)
+                                    subject = pseudogenes, type = '5p')
     threeprime <- getIdenticalLength(matches, query = repertoire[seqname],
-                                     subject = pseudogenes, type = '3p', max_dist = 60)
-    if( any(fiveprime == 60, na.rm = TRUE) ){
-      fiveprime <- getIdenticalLength(matches, query = repertoire[seqname],
-                                      subject = pseudogenes, type = '5p', max_dist = 200)
-    }
-    if( any(threeprime == 60, na.rm = TRUE) ){
-      fiveprime <- getIdenticalLength(matches, query = repertoire[seqname],
-                                      subject = pseudogenes, type = '3p', max_dist = 200)
-    }
+                                     subject = pseudogenes, type = '3p')
     #    edits <- as.data.frame(edits); rownames(edits) <- matches$subject
     #    fiveprime <- as.data.frame(fiveprime); rownames(fiveprime) <- matches$subject
     d <- merge(as.data.frame(fiveprime), as.data.frame(threeprime), by = "row.names")
