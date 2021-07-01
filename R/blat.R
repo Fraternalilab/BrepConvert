@@ -16,6 +16,14 @@ blat <- function(sequenceTb, database, blat_exec, min_score = 20)
   if(!all(c("qname", "seq") %in% colnames(sequenceTb))){
     stop("Check that sequenceTb contains all of the following columns: qname, seq")
   }
+
+  # check system
+  if (.Platform$OS.type == "windows") {
+    invoke <- shell
+  } else {
+    invoke <- system
+  }
+
   sequence_fasta <- tempfile()
   for(i in 1:nrow(sequenceTb)){
     write( c(paste0(">", sequenceTb[i, "qname"]), as.character(sequenceTb[i, "seq"])) ,
@@ -27,10 +35,10 @@ blat <- function(sequenceTb, database, blat_exec, min_score = 20)
   min_score <- as.integer(min_score)
   cmd <- paste0(blat_exec, ' ', database, " ", sequence_fasta,
                 " blat_output", random_n, ".blast -out=blast8 -tileSize=6 -stepSize=1 -minScore=", min_score)
-  system(cmd, intern = FALSE , ignore.stdout = TRUE, ignore.stderr = TRUE)
+  do.call(invoke, list("command" = cmd, "intern" = FALSE , "ignore.stdout" = TRUE, "ignore.stderr" = TRUE))
   result_table <- try( read.table(paste0("blat_output", random_n, ".blast"), stringsAsFactors = F),
                        silent = TRUE)
-  system(paste0("rm ", sequence_fasta))
+  file.remove(sequence_fasta)
   if( class(result_table) != "try-error" ){
     out <- result_table[, c(1, 7, 8, 9, 10, 5, 6, 2)] #, ncol(result_table) - 1, ncol(result_table))]
     colnames(out) <- c("qname", "q_start", "q_end", "s_start", "s_end",
@@ -41,7 +49,7 @@ blat <- function(sequenceTb, database, blat_exec, min_score = 20)
         return("-")
       } else return("+")
     })
-    system(paste0("rm blat_output", random_n, ".blast"))
+    file.remove(paste0("blat_output", random_n, ".blast"))
     return( out[, c("qname", "q_start", "q_end", "s_start", "s_end", "mismatch",
                     "gaps", "dir", "gene")] )
   } else return(NULL)

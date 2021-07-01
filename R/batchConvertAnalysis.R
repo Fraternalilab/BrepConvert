@@ -2,8 +2,8 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
                                  blat_exec)
 {
   # read in functional gene
-  functional <- readDNAStringSet(functional)
-  pseudogene <- readDNAStringSet(pseudogene)
+  functional <- Biostrings::readDNAStringSet(functional)
+  pseudogene <- Biostrings::readDNAStringSet(pseudogene)
   names(functional) <- stringr::str_extract(names(functional), "IG.V[0-9A-Z\\-\\*]*\\||IG.V.*$")
   names(pseudogene) <- stringr::str_extract(names(pseudogene), "IG.V[0-9A-Z\\-\\*]*\\||IG.V.*$")
   names(functional) <- gsub("|", "", names(functional), fixed = TRUE)
@@ -24,9 +24,9 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
 
   # 0b. Look-up table of mismatches of each pseudogene compared against the functional allele
   functional_mismatches <- lapply(functional, function(f){
-    m <- pairwiseAlignment(subject = f, pseudogene, type = "local")
+    m <- Biostrings::pairwiseAlignment(subject = f, pseudogene, type = "local")
     m <- sapply(m, function(x){
-      m <- reduce(c(as(x@pattern@mismatch, "IRangesList")[[1]], x@pattern@indel[[1]]))
+      m <- IRanges::reduce(c(as(x@pattern@mismatch, "IRangesList")[[1]], x@pattern@indel[[1]]))
       if(length(m) > 0) names(m) <- rep(names(x@pattern@unaligned), length(m))
       m
     })
@@ -112,8 +112,8 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
         for(i in 1:nrow(gw6)){
           if( is.na(gw6[i, "gene"]) ){
             a <- which(sapply(1:nrow(gw3), function(j){
-              intersection <- intersect( IRanges(gw6[i, "start"], gw6[i, "end"]),
-                                         IRanges(gw3[j, "start"], gw3[j, "end"]))
+              intersection <- intersect( IRanges::IRanges(gw6[i, "start"], gw6[i, "end"]),
+                                         IRanges::IRanges(gw3[j, "start"], gw3[j, "end"]))
               length(intersection) > 0
             }))
             if(length(a) > 0){

@@ -68,11 +68,14 @@ mergeHits <- function(hits, lut_functional)
         names(spacer_start) <- genes[[z-1]]
         spacer_end <- as.numeric( unlist(strsplit(hits[z, "q_start"], split = ";")) ) - 1
         names(spacer_end) <- genes[[z]]
-        stretch <- try( IRanges(start = spacer_start[g], end = spacer_end[g]), silent = TRUE )
+        stretch <- try( IRanges::IRanges(start = spacer_start[g], end = spacer_end[g]), silent = TRUE )
         if( class(stretch) == "try-error" ) return(1000) # just an arbitrary large number
         else{
-          m <- sum(width(intersect(stretch,
-                                   lut_functional[ which(names(lut_functional) == g) ])))
+          m <- sum(
+            IRanges::width(
+              IRanges::intersect(stretch,
+                                 lut_functional[ which(names(lut_functional) == g) ])
+            ))
           m
         }
       })

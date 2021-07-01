@@ -6,32 +6,32 @@ ScanGeneConversion <- function(seqname, repertoire, functional,
   # 1a. alignment
   # aln to every allele in the functional list. Take the allele with higher Sequence Identity.
   aln <- lapply(functional, function(f){
-    F_alignment <- pairwiseAlignment(f, repertoire[seqname], type="global-local", gapOpening=20)#type = "local")
+    F_alignment <- Biostrings::pairwiseAlignment(f, repertoire[seqname], type="global-local", gapOpening=20)#type = "local")
     F_alignment
   })
-  allele <- names(aln)[which.max(sapply(aln, pid))]
-  F_alignment <- aln[[which.max(sapply(aln, pid))]]
+  allele <- names(aln)[which.max(sapply(aln, Biostrings::pid))]
+  F_alignment <- aln[[which.max(sapply(aln, Biostrings::pid))]]
   # 1b. if Percent ID is below 50 - likely it is an incomplete read; skip this.
   # If not aligned from the beginning of the leader, to be safe, filter away
-  if( pid(F_alignment) < 50 ) return(NULL)
-  if( start(F_alignment@pattern@range) != 1 ) return(NULL)
+  if( Biostrings::pid(F_alignment) < 50 ) return(NULL)
+  if( IRanges::start(F_alignment@pattern@range) != 1 ) return(NULL)
 
   # 1c. process mismatch regions
   mismatches <- as(F_alignment@pattern@mismatch, "IRangesList")
   mismatches <- mismatches[[1]]
   # group together mismatches if they are less than 6bp apart
-  mismatches <- reduce(mismatches, min.gapwidth=gapwidth)
+  mismatches <- IRanges::reduce(mismatches, min.gapwidth=gapwidth)
   # stretches at least 3bp are 'gaps' to be matched to pseudogenes
-  gaps <- mismatches[width(mismatches) >= 3]
+  gaps <- mismatches[IRanges::width(mismatches) >= 3]
   # gaps_flanked <- reduce(gaps + 6) # add flanking stretch to help alignment
   # those less than 3bp are mismatches occur outside of gene-converted regions; to be reported
-  mismatches <- mismatches[width(mismatches) < 3]
+  mismatches <- mismatches[IRanges::width(mismatches) < 3]
   # if beginning of repertoire sequence is gapped, ignore the gap begins at pos 1
   if( grepl("^\\.", repertoire[seqname]) ){
-    gaps <- gaps[start(gaps) > 1]
+    gaps <- gaps[IRanges::start(gaps) > 1]
   }
   # if aln doesn't begin at position 1 pad the gap ranges accordingly
-  gaps <- shift( gaps, start( F_alignment@pattern@range ) - 1 )
+  gaps <- IRanges::shift( gaps, IRanges::start( F_alignment@pattern@range ) - 1 )
 
   # if no gaps, skip
   if(length(gaps) == 0) return(NULL)
@@ -76,8 +76,8 @@ ScanGeneConversion <- function(seqname, repertoire, functional,
   # numbering starting from the coding segment
 
   top_hits <- apply(gaps, MARGIN = 1, function(x){
-    hit_range <- IRanges(start = x[1], end = x[2])
-    startpos <- start(hit_range); endpos <- end(hit_range)
+    hit_range <- IRanges::IRanges(start = x[1], end = x[2])
+    startpos <- IRanges::start(hit_range); endpos <- IRanges::end(hit_range)
     matches <- getTopBlat(blat_part, start = startpos, end = endpos, ntop = 1,
                           adjustment = NULL)
     if(nrow(matches) == 0){
@@ -134,7 +134,7 @@ ScanGeneConversion <- function(seqname, repertoire, functional,
     #                 gene = paste(subject, collapse = ";"))
 
     # if gap width > 10, reject solutions where edit_distance >= 0.5 * width
-    if(width(hit_range) > 10){
+    if(IRanges::width(hit_range) > 10){
       matches <- matches[which(matches$edits < 0.5 * (endpos - startpos + 1)), ]
     }
     matches <- matches[order(matches$fiveprime, matches$threeprime, decreasing = TRUE), ]
@@ -160,20 +160,19 @@ ScanGeneConversion <- function(seqname, repertoire, functional,
   ungapped_sequence <- gsub(".", "", repertoire[seqname], fixed = TRUE)
   top_hits$seq_event <- apply(top_hits[, c("start_ungapped", "end_ungapped")],
                               MARGIN = 1, function(x){
-    as.character( subseq( ungapped_sequence, x[1], x[2]) )
+    as.character( Biostrings::subseq( ungapped_sequence, x[1], x[2]) )
   })
 
   # get nearest AID motif
-  AID <- sort(Reduce(c,
-                     sapply(c("AGC", "AGT", "GGC", "GGT", "TGC", "AAC", "TAC"), function(x) {
-                       o <- vmatchPattern(x, subject = functional[allele])[[1]]
-                       values(o) <- DataFrame(motif = x)
-                       return(o)
-                     })
-  )
+  AID <- Reduce(c,
+                sapply(c("AGC", "AGT", "GGC", "GGT", "TGC", "AAC", "TAC"), function(x) {
+                  o <- Biostrings::vmatchPattern(pattern = x, subject = functional[allele])[[1]]
+                  S4Vectors::values(o) <- S4Vectors::DataFrame(motif = x)
+                return(o)
+         })
   )#repertoire[seqname])[[1]])))
   #AID <- AID[start(AID) > 58]
-  AID <- AID[width(AID) >= 3]
+  AID <- AID[IRanges::width(AID) >= 3]
   #AID <- shift(AID, -58 + 1)
 
   # filter away identified gaps and mismatches
@@ -183,34 +182,34 @@ ScanGeneConversion <- function(seqname, repertoire, functional,
 
   top_hits$nearest_AID_motif <- apply(top_hits, MARGIN = 1, function(x){
     # genes <- unlist(strsplit(x[5], split = ";"))
-    gap <- IRanges(as.numeric(x[1]), as.numeric(x[2]))
-    nearest_index <- follow(gap, AID)
+    gap <- IRanges::IRanges(as.numeric(x[1]), as.numeric(x[2]))
+    nearest_index <- IRanges::follow(gap, AID)
     if(!is.na(nearest_index)){
-      start(AID[nearest_index])
+      IRanges::start(AID[nearest_index])
     } else {
       # then the first AID motif must coincide the 'start' of the gap
-      start(AID[1])
+      IRanges::start(AID[1])
     }
   })
 
   top_hits$AID_motif <- apply(top_hits, MARGIN = 1, function(x){
     # genes <- unlist(strsplit(x[5], split = ";"))
-    gap <- IRanges(as.numeric(x[1]), as.numeric(x[2]))
-    nearest_index <- follow(gap, AID)
+    gap <- IRanges::IRanges(as.numeric(x[1]), as.numeric(x[2]))
+    nearest_index <- IRanges::follow(gap, AID)
     if(!is.na(nearest_index)){
-      values(AID[nearest_index])[1, 1]
+      S4Vectors::values(AID[nearest_index])[1, 1]
     } else {
       # then the first AID motif must coincide the 'start' of the gap
-      values(AID[1])[1, 1]
+      S4Vectors::values(AID[1])[1, 1]
     }
   })
 
   top_hits$distance_to_AID_motif <- apply(top_hits, MARGIN = 1, function(x){
     # genes <- unlist(strsplit(x[5], split = ";"))
-    gap <- IRanges(as.numeric(x[1]), as.numeric(x[2]))
-    nearest_index <- follow(gap, AID)
+    gap <- IRanges::IRanges(as.numeric(x[1]), as.numeric(x[2]))
+    nearest_index <- IRanges::follow(gap, AID)
     if(!is.na(nearest_index)){
-      distance(gap, AID[nearest_index])
+      IRanges::distance(gap, AID[nearest_index])
     } else {
       # then the first AID motif must coincide the 'start' of the gap
       0
@@ -220,19 +219,20 @@ ScanGeneConversion <- function(seqname, repertoire, functional,
 
   # extract 5' and 3' strings relative to the conversion events
   top_hits$seq_5prime <- sapply(top_hits[, "start"], function(x){
-    if( (max(1, x - 10) < (x - 1)) & (max(1, x - 10) < nchar(functional[allele])) ){
-      s <- as.character( subseq( functional[allele], 1,
-                                 min(nchar(functional[allele]), x - 1)) )
+    if( (max(1, x - 10) < (x - 1)) & (max(1, x - 10) < nchar(as.character(functional[allele]))) ){
+      s <- as.character( Biostrings::subseq( functional[allele], 1,
+                                             min(nchar(as.character(functional[allele])), x - 1)) )
       s <- gsub(".", "", s, fixed = TRUE)
-      subseq(s, max(1, nchar(s) - 9), nchar(s))
+      Biostrings::subseq(s, max(1, nchar(s) - 9), nchar(s))
     } else return(NA)
   })
   top_hits$seq_3prime <- sapply(top_hits[, "end"], function(x){
-    if( ((x + 1) <  min(nchar(functional[allele]), x + 10)) & (x + 1 < nchar(functional[allele])) ){
-      s <- as.character( subseq( functional[allele], max(1, x + 1),
-                                 nchar(functional[allele])) )
+    if( ((x + 1) <  min(nchar(as.character(functional[allele])), x + 10)) &
+        (x + 1 < nchar(as.character(functional[allele]))) ){
+      s <- as.character( Biostrings::subseq( functional[allele], max(1, x + 1),
+                                             nchar(as.character(functional[allele]))) )
       s <- gsub(".", "", s, fixed = TRUE)
-      subseq(s, 1, min(10, nchar(s)))
+      Biostrings::subseq(s, 1, min(10, nchar(s)))
     } else return(NA)
   })
 
