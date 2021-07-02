@@ -1,3 +1,39 @@
+#' Annotating gene conversion events in BCR repertoire data.
+#'
+#' @param functional character, filepath to FASTA file containing DNA sequence(s) of the functional V gene allele(s).
+#' @param pseudogene character, filepath to FASTA file containing DNA sequence(s) of the pseudogene V gene allele(s).
+#' @param repertoire a named vector of characters corresponding to IMGT-gapped DNA sequence from the BCR repertoire. The names are taken as the identifiers of the sequences. See examples below for suggestions on how to generate this from AIRR format repertoire data.
+#' @param blat_exec character, filepath to the executable of the BLAT program.
+#' 
+#' @description This is the main function of the \code{BrepConvert} package for users to annotate gene conversion events in BCR repertoire data, given DNA sequence sets of functional and pseudogene V gene alleles.
+#'
+#' @return A data.frame with each row corresponding to one gene conversion event. The following annotations are stored in separate columns:
+#' \describe{
+#'   \item{event}{integer from 1, 2, ... up to n = the number of events observed on a sequence. Just an identifier of gene conversion event.}
+#'   \item{possibility}{character from a, b, ... and so on. Denote different possibilities of donor pseudogenes which could account for the observed conversion event.}
+#'   \item{start}{integer, position on the repertoire sequence which denotes the start of the conversion event.}
+#'   \item{end}{integer, position on the repertoire sequence which denotes the end of the conversion event.}
+#'   \item{gene}{character, a semicolon-delimited list of possible donor pseudogenes which could account for the conversion event. \code{NA} if the gene conversion event could not be matched to any pseudogenes.}
+#'   \item{fiveprime_identical_length}{integer, the number of nucleotides at the 5' of the named conversion event which is identical between the observed sequence and the named \code{genes}. \code{NA} if the gene conversion event could not be matched to any pseudogenes.}
+#'   \item{threeprime_identical_length}{integer, the number of nucleotides at the 3' of the named conversion event which is identical between the observed sequence and the named \code{genes}. \code{NA} if the gene conversion event could not be matched to any pseudogenes.}
+#'   \item{edit_distance}{integer, Levenshtein distance comparing the sequence stretch observed on the repertoire sequence and the aligned sequence stretch originated from the donor pseudogene(s). \code{NA} if the gene conversion event could not be matched to any pseudogenes.}
+#'   \item{nearest_AID_motif}{integer, the position on the observed sequence where a DNA motif targeted by the AID enzyme can be found closest (at 5') to the gene conversion event.}
+#'   \item{AID_motif}{character, the DNA motif targeted by the AID enzyme which is closest (at 5') to the gene conversion event, at the position given by \code{nearest_AID_motif}.
+#'   \item{distance_to_AID_motif}{integer, the number of nucleotides between the named gene conversion event and the given \{AID_motif}.
+#'   \item{SeqID}{character, identifier for the repertoire sequence, taken from the \code{names} attribute of the input parameter \code{repertoire}.}
+#'   \item{seq_event}{character, nucleotide sequence stretch corresponding to the gene conversion event.}
+#'   \item{seq_5prime}{character, sequence stretch 10 nucleotides 5' of the start site of the gene conversion event. \code{NA} if the gene conversion event begins at position 1.}
+#'   \item{seq_3prime}{character, sequence stretch 10 nucleotides 3' of the end site of the gene conversion event. \code{NA} if the gene conversion event stops at the last position of the V gene.}
+#' }
+#'
+#' @examples
+#' \dontrun{}
+#'
+#' @importFrom Biostrings readDNAStringSet writeXStringSet DNAStringSet pairwiseAlignment
+#' @importFrom stringr str_extract
+#' @importFrom IRanges reduce IRangesList
+#' 
+#' @export
 batchConvertAnalysis <- function(functional, pseudogene, repertoire,
                                  blat_exec)
 {
@@ -78,19 +114,18 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
     toBlat_gw3 <- lapply(toSecondMap, doBlat,
                          repertoire = repertoire,
                          functional = functional,
-                         heavy_or_light = args$heavy_or_light,
                          gapwidth = 3)
     toBlat_gw3 <- toBlat_gw3[sapply(toBlat_gw3, function(x) !is.null(x))]
     toBlat_gw3 <- do.call("rbind", toBlat_gw3)
-    blat_gw3 <- blat(toBlat_gw3, database = args$pseudogenes,
-                     blat_exec = args$blat, min_score = 1)
+    blat_gw3 <- blat(toBlat_gw3, database = tmpfile_p,
+                     blat_exec = blat_exec, min_score = 1)
     if( is.data.frame(blat_gw3) ){
       if( nrow(blat_gw3) > 0 ){
         blat_gw3 <- formatBlat(blat_gw3, adjustment = 6)
         results_gw3 <- lapply(toSecondMap, ScanGeneConversion, repertoire = repertoire,
                               functional = functional, pseudogenes = pseudogene,
-                              blat_all = blat_gw3, lut = functional_mismatches,
-                              gapwidth = 3, heavy_or_light = args$heavy_or_light)
+                              blat_all = blat_gw3, blat_whole = blat_whole,
+			      lut = functional_mismatches, gapwidth = 3)
         results_gw3 <- results_gw3[sapply(results_gw3, function(x) !is.null(x))]
         results_gw3 <- do.call("rbind", results_gw3)
       } else results_gw3 <- data.frame()

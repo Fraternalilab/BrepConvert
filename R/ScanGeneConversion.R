@@ -1,3 +1,14 @@
+#' Wrapper function to scan and annotate gene conversion events
+#'
+#' @param seqname character, identifier of a given sequence from \code{repertoire}, for which gene conversion events are to be annotated.
+#' @param repertoire A named vector of strings storing nucleotide sequences observed from a repertoire. The \code{names} attribute of the vector stores the sequence identifiers.
+#' @param functional \code{DNAStringSet} object storing nucleotide sequences of the functional alleles of the V gene.
+#' @param pseudogenes \code{DNAStringSet} object storing nucleotide sequences of the pseudogene alleles of the V gene.
+#' @param blat_all data.frame storing BLAT results when searching subsequences taken from \code{repertoire} against the pseudogene sequences.
+#' @param blat_whole data.frame storing BLAT results when searching the full-length repertoire sequences against the pseudogene sequences. This is used to supplement pseudogene matches given in \code{blat_all}
+#' @param lut A \code{IRanges} object storing positions of mismatches comparing all functional alleles against all pseudogene alleles.
+#' @param gapwidth integer, the number of nucleotides that separate mismatches to be grouped together as one candidate gene conversion event.
+#'
 ScanGeneConversion <- function(seqname, repertoire, functional,
                                pseudogenes, blat_all, blat_whole, lut,
                                gapwidth = 3){

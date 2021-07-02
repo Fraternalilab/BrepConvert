@@ -1,3 +1,13 @@
+#' Function to calculate the length of identical sequence stretch 5' or 3' of given boundaries of sequence stretches from two longer sequences.
+#'
+#' @param hits data.frame storing potential hits (donor pseudogenes) that explain a given gene conversion event. Each row corresponds to one definition using a given pseudogene. The boundaries of the pseudogene sequence and the observed repertorie sequence are given.
+#' @param query character, the full-length V gene sequence of the observed repertoire sequence for which gene conversion events are annotated.
+#' @param subject \code{DNAStringSet} object containing a set of pseudogene DNA sequences.
+#' @param type character, either '5p' or '3p' denoting the direction for which the identical sequence stretches are considered.
+#' 
+#' @importFrom stringi stri_sub stri_cmp_eq
+#' @importFrom Biostrings reverseComplement nchar
+#'
 getIdenticalLength <- function(hits, subject, query, type)
 {
   # test (up to 'max') whether the 5' stretches of the subject
@@ -6,9 +16,9 @@ getIdenticalLength <- function(hits, subject, query, type)
     if( (x[8] == "+" & type == '5p') ){
       s <- try( rev(stringi::stri_sub(subject[x[1]], 1:(as.numeric(x[6]) - 1), (as.numeric(x[6]) - 1))), silent = TRUE )
     } else if( (x[8] == "-" & type == '3p') ){
-      s <- try( rev(reverseComplement(stringi::stri_sub(subject[x[1]], 1:(as.numeric(x[6]) - 1), (as.numeric(x[6]) - 1)))), silent = TRUE )
+      s <- try( rev(Biostrings::reverseComplement(stringi::stri_sub(subject[x[1]], 1:(as.numeric(x[6]) - 1), (as.numeric(x[6]) - 1)))), silent = TRUE )
     } else if((x[8] == "-" & type == '5p') ){
-      s <- try( reverseComplement(stringi::stri_sub(subject[x[1]], as.numeric(x[7]) + 1, (as.numeric(x[7]) + 1):Biostrings::nchar(subject[x[1]]))),
+      s <- try( Biostrings::reverseComplement(stringi::stri_sub(subject[x[1]], as.numeric(x[7]) + 1, (as.numeric(x[7]) + 1):Biostrings::nchar(subject[x[1]]))),
                 silent = TRUE )
     } else if( (x[8] == "+" & type == '3p') ){
       s <- try( stringi::stri_sub(subject[x[1]], as.numeric(x[7]) + 1, (as.numeric(x[7]) + 1):Biostrings::nchar(subject[x[1]])), silent = TRUE )
