@@ -2,12 +2,9 @@
 #'
 #' @param tb data.frame, output from the \code{blat} function.
 #' @param adjustment integer, the number of nucleotides which flank the gene conversion events (included for BLAT just to facilitate the alignment to look for seeds). This needs to be taken into account to re-adjust the actual start and end point of conversion events. (default: 6)
-#' 
-#' @examples
-#' \dontrun{ }
 #'
 #' @importFrom stringr str_extract
-#' 
+#'
 formatBlat <- function(tb, adjustment = 6)
 {
   tb[, "gene"] <- gsub("|", "", stringr::str_extract(tb[, "gene"], "IG.V.*\\||IG.V.*$"),

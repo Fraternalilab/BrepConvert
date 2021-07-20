@@ -1,0 +1,113 @@
+---
+title: "BrepConvert: Automated analysis of immunoglobulin gene conversion events"
+author: "Joseph Ng"
+date: "`r Sys.Date()`"
+output: 
+  rmarkdown::html_vignette:
+    fig_caption: yes
+vignette: >
+  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Background
+
+B cells are diversified in order to acquire the ability to recognise and respond against different immune challenges. The processes of diversification of the immunoglobulins B cells produced, both in the forms of B cell receptors and as secreted antibodies, are well studied in humans and a small handful of model organisms such as mice: processes like V(D)J gene recombination and somatic hypermutation introduces a great amount of sequence diversity into immunoglobulins. Such diversity is fine-tuned by Darwinian selection to remove those which express immunoglubilin target self-antigens, and expand those which are suitable to bind, recognise and respond against the immune challenge at hand. However, immunoglobulin sequence diversification is less characterised for species where a small handful of functional immunoglobulin gene segments exist, e.g. chickens where only 1 functional copy of V gene each for the heavy and light chain gene loci. In these systems we often observe long stretches of sequence in the transcribed immunoglobulins attributable to pseudogenes, a phenomenon known as **gene conversion**. While such observations have been previously reported, they are often small-scale samples of the immunoglobulin repertoire with manual annotation of gene conversion events, or studies without reported code base to reproduce such analysis.
+
+`BRepConvert` is an R package designed to automate the annotation of gene conversion events in immunoglobulin repertoire data. It uses a combination of pairwise global sequence alignment, BLAT (BLAST-like alignment tool) and arithmetic functionalities provided in base R to identify candidate gene conversion events, annotate donor pseudogenes, report associated statistics and provide basic plotting capabilities to visualise gene conversion on your data. 
+
+# Example
+
+In this vignette we use a small set of chicken immunoglobulin light chain sequences published as one of the earliest reports of gene conversion in chicken. The dataset is shipped with this package:
+
+```{r}
+library(BrepConvert)
+
+dataset <- system.file( "extdata/pmid3100050_vquest.tsv", 
+                        package = "BrepConvert" )
+dataset <- read.table( dataset, sep = "\t", stringsAsFactors = FALSE, header = TRUE )
+dataset[, c("sequence_id", "locus", "v_call", "j_call", "sequence_alignment")]
+
+# 'sequence_alignment' contain the IMGT-gapped DNA sequence of each observation
+print( head( dataset$sequence_alignment, 3 ) )
+
+# assigning it to a new variable and name this vector with the sequence_id
+repertoire <- dataset$sequence_alignment
+names( repertoire ) <- dataset$sequence_id
+print( head( repertoire , 3) )
+```
+
+## One-step annotation of gene conversion events
+
+`BrepConvert` is designed to be simple to use - users only need to use one function to perform automated annotation of gene conversion events for their dataset. The function `batchConvertAnalysis` will perform all the following steps:
+
+1. Pairwise sequence alignment of each sequence in the repertoire to the functional (alleles) to identify sequence stretches as candidate gene conversion events.
+2. Run BLAT of these sequence stretches against pseudogene sequences to identify donor pseudogenes
+3. Optimise annotation to rank candidate pseudogene donors by comparing their identity to the observation. It also merges adjacent gene conversion events if they could be attributable to the same pseudogene donor, and the intervening segment is identical to this pseudogene. This narrows down candidates to find the closest pseudogene donor for each gene conversion event.
+4. Provide annotation such as the nearest AID mutational hotspot, and sequence identity 5' and 3' of the nominated gene conversion event.
+
+`batchConvertAnalysis` requires the following input:
+
+1. **Sequences from repertoire**: a *named vector* of characters corresponding to *IMGT-gapped DNA sequence* from the BCR repertoire. The names are taken as the identifiers of the sequences. This vector is passed as an argument (`repertoire`).
+2. **Functional allele sequences**: a FASTA file containing IMGT-gapped DNA sequences of functional allele(s). The filepath is passed as an argument (`functional`).
+3. **Pseudogene allele sequences**: a FASTA file containing IMGT-gapped DNA sequences of pseudogene allele(s). The filepath is passed as an argument (`pseudogene`).
+4. **A copy of the executable of the BLAT program**: The filepath to such executable is passed as an argument (`blat_exec`).
+
+```{r}
+# FASTA files containing pseudogene and functional alleles of the Chicken IGLV
+# locus are shipped with the package.
+functional_IGLV <- system.file("extdata/IMGT_Chicken_IGLV_F.fasta",
+                               package = "BrepConvert")
+pseudogene_IGLV <- system.file("extdata/IMGT_Chicken_IGLV_P.fasta",
+                               package = "BrepConvert")
+
+# An executable of the BLAT program is also shipped with the package.
+blat <- system.file("exe/blat", package = "BrepConvert")
+# NOTE: This works for Linux OS only. For other OS, please download/compile
+# the executable and indicate the filepath like so:
+# blat <- "/home/abc/Documents/blat/blat"
+
+annotation <- batchConvertAnalysis(
+  functional = functional_IGLV,
+  pseudogene = pseudogene_IGLV,
+  repertoire = repertoire, # notice here the vector is passed, NOT the entire data table!
+  blat_exec = blat
+)
+
+# look at the annotation for sequence '3W-4'
+print( annotation[ annotation$SeqID == "3W-4", ] )
+
+```
+
+As you can see, the output is a table consisting of results from all sequences provided. Each line corresponds to one gene conversion event identified in one sequence, with the following annotation:
+
+* `SeqID`: the identifier for the sequence provided in the names of the input `repertoire` vector.
+* `event` / `possibility`: 
+  + Events are numbered 1, 2, 3 ... for each sequence counting from the beginning of the IMGT numbering. 
+  + In cases where different pseudogenes could explain the same gene conversion event (but with, e.g. different levels of identity evidenced by the edit distance, see below), these possibilities are labelled a, b, c ... and ordered by their similarity to the observed sequence in the repertoire.
+* `gene`: nominated pseudogene donors for each event. In cases where identical sequence stretch can be found across different pseudogenes, all such genes are listed and delimited by semicolon (';'). If the conversion event could not be mapped to any pseudogene, it would be noted as 'NA'.
+* `start` / `end` / `fiveprime_identical_length` / `threeprime_identical_length`: 
+  + `start` and `end` denote the start and beginning relative to the numbering the observed sequence - i.e. IMGT-gapped numbering.
+  + `fiveprime_identical_length` and `threeprime_identical_length` indicates the whether identity extend beyond the given `start` and `end`. If e.g. 30 bp 5' to `start` it is identical between the nominated pseudogene(s), the functional allele and the observed sequence, `fiveprime_identical_length` will be 30. The same applies for 3' & the 'end' column. 
+  + This allows exploration of the longest-possible definition of the gene conversion event, as the method identifies events only based on sequence mismatches and could underestimate the size of gene conversion events as such. 
+  + **Note: ** since the numbering used is IMGT-gapped, the size of gene conversion events inferred (e.g. end - start) may not be corresponding to the actual length of the sequence stretch implicated - it may contain gap(s). The column `seq_event` contains the actual sequence stretch implicated in the gene conversion event, which would be useful for measuring the size of conversion events.
+* `edit_distance`: The number of "edits" (i.e. changes) necessary to convert the nucleotide sequence observed to the nominated pseudogene(s). This is a metric to rank the candidate donor pseudogenes in terms of how close they are to the observed sequence from the repertoire.
+* `AID_motif`: The closest DNA motif targetted by the AID enzyme is provided, together with its position (`nearest_AID_motif`) and its distance (in terms of number of nucleotides; column `distance_to_AID_motif`) from `start`.
+* `seq_event`: The nucleotide sequence between `start` and `end`.
+* `seq_5prime` and `seq_3prime`: The sequence stretch (10 nucleotides) 5' and 3' to the gene conversion event. This is useful to identify whether there are sequence motifs surrounding gene conversion events observed in a group of sequences.
+
+## Visualisation
+
+The output from the `batchConvertAnalysis` is very rich; it would be handy to have a basic visualisation summarising the conversion events, and, if possible, highlight a few pseudogenes of interest.
+
+```{r}
+
+```

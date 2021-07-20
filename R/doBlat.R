@@ -1,18 +1,15 @@
 #' Extract sequence stretches to be analysed using BLAT.
 #'
 #' @param seqname character, name of sequence in \code{repertoire}.
-#' @param repertoire a named vector of full-length sequences to be analysed. The \code{names} attribute of this vector stores the sequence identifiers. 
+#' @param repertoire a named vector of full-length sequences to be analysed. The \code{names} attribute of this vector stores the sequence identifiers.
 #' @param functional \code{DNAStringSet} object storing DNA sequences of the functional V gene alleles.
 #' @param gapwidth integer, the distance between separate mismatches to be grouped together as a 'gap' to be analysed as candidate gene conversion events. (default: 3)
-#' @param flank integer, the number of nucleotides to be included in the 'gap' sequences to be searched using BLAT to annotate for candidate gene conversion events. (default: 6) 
-#'
-#' @examples
-#' \dontrun{ }
+#' @param flank integer, the number of nucleotides to be included in the 'gap' sequences to be searched using BLAT to annotate for candidate gene conversion events. (default: 6)
 #'
 #' @importFrom Biostrings pairwiseAlignment pid start subseq
 #' @importFrom IRanges IRanges IRangesList reduce width shift
 #' @importFrom stringr fixed str_count
-#' 
+#'
 doBlat <- function(seqname, repertoire, functional,
                    gapwidth = 3, flank=6)
 {
