@@ -246,9 +246,9 @@ ScanGeneConversion <- function(seqname, repertoire, functional,
       Biostrings::subseq(s, 1, min(10, nchar(s)))
     } else return(NA)
   })
-
+  top_hits$allele <- allele
   top_hits[, c("start","end","gene","fiveprime_identical_length",
                "threeprime_identical_length","edit_distance",
                "nearest_AID_motif","AID_motif","distance_to_AID_motif",
-               "SeqID","seq_event","seq_5prime","seq_3prime")]
+               "SeqID","seq_event","seq_5prime","seq_3prime", "allele")]
 }

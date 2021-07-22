@@ -4,7 +4,7 @@
 #' @param query character, the full-length V gene sequence of the observed repertoire sequence for which gene conversion events are annotated.
 #' @param subject \code{DNAStringSet} object containing a set of pseudogene DNA sequences.
 #' @param type character, either '5p' or '3p' denoting the direction for which the identical sequence stretches are considered.
-#' 
+#'
 #' @importFrom stringi stri_sub stri_cmp_eq
 #' @importFrom Biostrings reverseComplement nchar
 #'

@@ -8,7 +8,7 @@ Authors@R: c( person( given = "Joseph", family = "Ng",
 Author: Joseph Ng [aut, cre]
 Maintainer: Joseph Ng <joseph.chifung.ng@gmail.com>
 Description: Package for automated gene conversion annotation and analysis of antibody repertoire data.
-License: GPL
+License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.1.0
@@ -22,4 +22,10 @@ Imports:
     Biostrings,
     IRanges,
     stringi,
-    stringr
+    stringr,
+    ggplot2,
+    methods,
+    S4Vectors,
+    cowplot,
+    scales,
+    tidyr

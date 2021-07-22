@@ -5,8 +5,11 @@ date: "`r Sys.Date()`"
 output: 
   rmarkdown::html_vignette:
     fig_caption: yes
+csl: nar-webserver-issue.csl
+bibliography: bibliography.bib
+urlcolor: blue
 vignette: >
-  %\VignetteIndexEntry{Vignette Title}
+  %\VignetteIndexEntry{BrepConvert: Automated analysis of immunoglobulin gene conversion events}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -26,7 +29,7 @@ B cells are diversified in order to acquire the ability to recognise and respond
 
 # Example
 
-In this vignette we use a small set of chicken immunoglobulin light chain sequences published as one of the earliest reports of gene conversion in chicken. The dataset is shipped with this package:
+In this vignette we use a small set of chicken immunoglobulin light chain sequences published as one of the earliest reports of gene conversion in chicken [@pmid3100050]. The dataset is shipped with this package:
 
 ```{r}
 library(BrepConvert)
@@ -34,16 +37,19 @@ library(BrepConvert)
 dataset <- system.file( "extdata/pmid3100050_vquest.tsv", 
                         package = "BrepConvert" )
 dataset <- read.table( dataset, sep = "\t", stringsAsFactors = FALSE, header = TRUE )
-dataset[, c("sequence_id", "locus", "v_call", "j_call", "sequence_alignment")]
+dataset[, c("sequence_id", "locus", "v_call", "j_call")]
 
-# 'sequence_alignment' contain the IMGT-gapped DNA sequence of each observation
-print( head( dataset$sequence_alignment, 3 ) )
+# 'sequence_alignment' contain the IMGT-gapped DNA sequence of the V gene 
+# for each observation
+print( head( dataset$v_sequence_alignment, 3 ) )
 
 # assigning it to a new variable and name this vector with the sequence_id
-repertoire <- dataset$sequence_alignment
+repertoire <- dataset$v_sequence_alignment
 names( repertoire ) <- dataset$sequence_id
 print( head( repertoire , 3) )
 ```
+
+These are 12 light chain sequences collected from three-weeks-stage chicken bursal cells (those sequences marked '3W-') and bursal cells collected from the 18-days embryos ('18D-').
 
 ## One-step annotation of gene conversion events
 
@@ -78,36 +84,61 @@ blat <- system.file("exe/blat", package = "BrepConvert")
 annotation <- batchConvertAnalysis(
   functional = functional_IGLV,
   pseudogene = pseudogene_IGLV,
-  repertoire = repertoire, # notice here the vector is passed, NOT the entire data table!
+  repertoire = repertoire, # notice here the vector is passed, NOT the entire table!
   blat_exec = blat
 )
 
-# look at the annotation for sequence '3W-4'
-print( annotation[ annotation$SeqID == "3W-4", ] )
+# look at the annotation for sequence '3W-3'
+print( annotation[ annotation$SeqID == "3W-3", ] )
 
 ```
 
 As you can see, the output is a table consisting of results from all sequences provided. Each line corresponds to one gene conversion event identified in one sequence, with the following annotation:
 
-* `SeqID`: the identifier for the sequence provided in the names of the input `repertoire` vector.
-* `event` / `possibility`: 
-  + Events are numbered 1, 2, 3 ... for each sequence counting from the beginning of the IMGT numbering. 
-  + In cases where different pseudogenes could explain the same gene conversion event (but with, e.g. different levels of identity evidenced by the edit distance, see below), these possibilities are labelled a, b, c ... and ordered by their similarity to the observed sequence in the repertoire.
-* `gene`: nominated pseudogene donors for each event. In cases where identical sequence stretch can be found across different pseudogenes, all such genes are listed and delimited by semicolon (';'). If the conversion event could not be mapped to any pseudogene, it would be noted as 'NA'.
-* `start` / `end` / `fiveprime_identical_length` / `threeprime_identical_length`: 
-  + `start` and `end` denote the start and beginning relative to the numbering the observed sequence - i.e. IMGT-gapped numbering.
-  + `fiveprime_identical_length` and `threeprime_identical_length` indicates the whether identity extend beyond the given `start` and `end`. If e.g. 30 bp 5' to `start` it is identical between the nominated pseudogene(s), the functional allele and the observed sequence, `fiveprime_identical_length` will be 30. The same applies for 3' & the 'end' column. 
-  + This allows exploration of the longest-possible definition of the gene conversion event, as the method identifies events only based on sequence mismatches and could underestimate the size of gene conversion events as such. 
-  + **Note: ** since the numbering used is IMGT-gapped, the size of gene conversion events inferred (e.g. end - start) may not be corresponding to the actual length of the sequence stretch implicated - it may contain gap(s). The column `seq_event` contains the actual sequence stretch implicated in the gene conversion event, which would be useful for measuring the size of conversion events.
-* `edit_distance`: The number of "edits" (i.e. changes) necessary to convert the nucleotide sequence observed to the nominated pseudogene(s). This is a metric to rank the candidate donor pseudogenes in terms of how close they are to the observed sequence from the repertoire.
-* `AID_motif`: The closest DNA motif targetted by the AID enzyme is provided, together with its position (`nearest_AID_motif`) and its distance (in terms of number of nucleotides; column `distance_to_AID_motif`) from `start`.
-* `seq_event`: The nucleotide sequence between `start` and `end`.
-* `seq_5prime` and `seq_3prime`: The sequence stretch (10 nucleotides) 5' and 3' to the gene conversion event. This is useful to identify whether there are sequence motifs surrounding gene conversion events observed in a group of sequences.
+1. `SeqID`: the identifier for the sequence provided in the names of the input `repertoire` vector.
+2. `event` / `possibility`: 
+    + Events are numbered 1, 2, 3 ... for each sequence counting from the beginning of the IMGT numbering. 
+    + In cases where different pseudogenes could explain the same gene conversion event (but with, e.g. different levels of identity evidenced by the edit distance, see below), these possibilities are labelled a, b, c ... and ordered by their similarity to the observed sequence in the repertoire.
+3. `gene`: nominated pseudogene donors for each event. In cases where identical sequence stretch can be found across different pseudogenes, all such genes are listed and delimited by semicolon (';'). If the conversion event could not be mapped to any pseudogene, it would be noted as 'NA'.
+4. `start` / `end` / `fiveprime_identical_length` / `threeprime_identical_length`: 
+    + `start` and `end` denote the start and beginning relative to the numbering the observed sequence - i.e. IMGT-gapped numbering.
+    + `fiveprime_identical_length` and `threeprime_identical_length` indicates the whether identity extend beyond the given `start` and `end`. If e.g. 30 bp 5' to `start` it is identical between the nominated pseudogene(s), the functional allele and the observed sequence, `fiveprime_identical_length` will be 30. The same applies for 3' & the 'end' column. 
+    + This allows exploration of the longest-possible definition of the gene conversion event, as the method identifies events only based on sequence mismatches and could underestimate the size of gene conversion events as such. 
+    + **Note: ** since the numbering used is IMGT-gapped, the size of gene conversion events inferred (e.g. end - start) may not be corresponding to the actual length of the sequence stretch implicated - it may contain gap(s). The column `seq_event` contains the actual sequence stretch implicated in the gene conversion event, which would be useful for measuring the size of conversion events.
+5. `edit_distance`: The number of "edits" (i.e. changes) necessary to convert the nucleotide sequence observed to the nominated pseudogene(s). This is a metric to rank the candidate donor pseudogenes in terms of how close they are to the observed sequence from the repertoire.
+6. `AID_motif`: The closest DNA motif targetted by the AID enzyme is provided, together with its position (`nearest_AID_motif`) and its distance (in terms of number of nucleotides; column `distance_to_AID_motif`) from `start`.
+7. `seq_event`: The nucleotide sequence between `start` and `end`.
+8. `seq_5prime` and `seq_3prime`: The sequence stretch (10 nucleotides) 5' and 3' to the gene conversion event. This is useful to identify whether there are sequence motifs surrounding gene conversion events observed in a group of sequences.
+9. `germline`/`observed_AA`: amino acid sequence translated from the identified gene conversion events. Available for both `observed` (i.e. the sequence stretch observed) and `germline` (i.e. the same segment in the germline functional allele), and `narrow` (the region between `start` and `end`) and `broad` (`narrow` plus the flanking sequence identicated by `5'/3'_identical_lengths`) definitions of the gene conversion event.
 
 ## Visualisation
 
 The output from the `batchConvertAnalysis` is very rich; it would be handy to have a basic visualisation summarising the conversion events, and, if possible, highlight a few pseudogenes of interest.
 
-```{r}
-
+```{r, fig.width=7, fig.height=6}
+plotEvents( annotation = annotation, repertoire = repertoire,
+            show.sequence.names = TRUE, # recommended FALSE if you are visualising a lot of sequences!
+            thickness = c(4, 1), # this controls the thickness of lines drawn
+            highlight.genes = c("IGLV1-2", "IGLV1-16", "IGLV1-22" )) # this is optionally; these donors will be highlighted with different colours
 ```
+
+As described in the original paper we can observe much more prevasive gene conversion events in the sequences collected from three-weeks-stage chicken bursal cells (those sequences marked '3W-') compared to bursal cells collected from the 18-days embryos ('18D-'). We can compare this to the analysis presented in the original paper where the gene conversion events were identified manually:
+
+![Figure 9 from the original paper, listing gene conversion events of a selection of the sequences included in our example. Vertical bars correspond to the boundaries of the gene conversion events; Dark dots denote DNA substitutions with no identified donors.](pmid3100050_Fig9.png)
+
+Notwithstanding differences in the germline allele nomenclature (understandable given we use the up-to-date IMGT gene catalogue), `BrepConvert` provides a fast, reasonable accurate method to annotate gene conversion events over large samples of immunoglobulin sequences.
+
+We can further compare the 3W and 18D sequences using histograms. The following shows a histogram of *coverage* of gene conversion events - i.e. how often is a given DNA position implicated in a gene conversion event?
+
+```{r, fig.width=7, fig.height=7}
+# first add an extra column 'sequence_type' indicating whether
+# a sequence is from the 3W or 18D group
+annotation$sequence_type <- ifelse(grepl("^3W-", annotation$SeqID), "3W", "18D")
+plotCoverage(annotation, repertoire, 'sequence_type', 
+             type = 'coverage', # alternatively 'start' considers only the start sites
+             definition = 'both') # or 'narrow' / 'broad' if you only want either definition of boundaries
+```
+
+Here these plots visualise the proportion of gene conversion events (y-axis) which covers any given DNA position (x-axis) along the V gene. You can see clearly the wider boundaries of gene conversion events implicated in the 'broad' definition (i.e. the start/end points of sequence differences plus the 5'/3' padded nucleotide stretches identical between the pseudogene and the observed sequence) - this is the maximum size of gene conversion events possibly explainable by the given donor pseudogene. This plot is useful for comparing a large number of sequences: instead of plotting each sequence independently, the histograms summarise the locations of these events better for larger amount of data.
+
+# References

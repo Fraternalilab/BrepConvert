@@ -4,6 +4,7 @@
 #' @param pseudogene character, filepath to FASTA file containing DNA sequence(s) of the pseudogene V gene allele(s).
 #' @param repertoire a named vector of characters corresponding to IMGT-gapped DNA sequence from the BCR repertoire. The names are taken as the identifiers of the sequences. See examples below for suggestions on how to generate this from AIRR format repertoire data.
 #' @param blat_exec character, filepath to the executable of the BLAT program.
+#' @param convertAA Do you want amino acid sequences of the original, germline functional allele and the observed, converted segment? (default: TRUE)
 #'
 #' @description This is the main function of the \code{BrepConvert} package for users to annotate gene conversion events in BCR repertoire data, given DNA sequence sets of functional and pseudogene V gene alleles.
 #'
@@ -24,10 +25,35 @@
 #'   \item{seq_event}{character, nucleotide sequence stretch corresponding to the gene conversion event.}
 #'   \item{seq_5prime}{character, sequence stretch 10 nucleotides 5' of the start site of the gene conversion event. \code{NA} if the gene conversion event begins at position 1.}
 #'   \item{seq_3prime}{character, sequence stretch 10 nucleotides 3' of the end site of the gene conversion event. \code{NA} if the gene conversion event stops at the last position of the V gene.}
+#'   \item{germline_AA_narrow}{(avaialble if \code{convertAA == TRUE}) Amino acid sequence of the region between \code{start} and \code{end}, from the functional germline allele.}
+#'   \item{observed_AA_narrow}{(avaialble if \code{convertAA == TRUE}) Amino acid sequence of the region between \code{start} and \code{end}, from the observed sequence sampled in the repertoire data.}
+#'   \item{germline_AA_broad}{(avaialble if \code{convertAA == TRUE}) Amino acid sequence of the region between \code{start} and \code{end} plus the flanking stretches given by \code{fiveprime_identical_length} and \code{threeprime_identical_length}, from the functional germline allele.}
+#'   \item{observed_AA_broad}{(avaialble if \code{convertAA == TRUE}) Amino acid sequence of the region between \code{start} and \code{end} plus the flanking stretches given by \code{fiveprime_identical_length} and \code{threeprime_identical_length}, from the observed sequence sampled in the repertoire data.}
 #' }
 #'
 #' @examples
-#' \dontrun{}
+#' \dontrun{
+#' # FASTA files containing pseudogene and functional alleles of the Chicken IGLV
+#' # locus are shipped with the package.
+#' functional_IGLV <- system.file("extdata/IMGT_Chicken_IGLV_F.fasta",
+#'                                package = "BrepConvert")
+#' pseudogene_IGLV <- system.file("extdata/IMGT_Chicken_IGLV_P.fasta",
+#'                                package = "BrepConvert")
+#'
+#' # An executable of the BLAT program is also shipped with the package.
+#' blat <- system.file("exe/blat", package = "BrepConvert")
+#' # NOTE: This works for Linux OS only. For other OS, please download/compile
+#' # the executable and indicate the filepath like so:
+#' # blat <- "/home/abc/Documents/blat/blat"
+#'
+#' annotation <- batchConvertAnalysis(
+#'   functional = functional_IGLV,
+#'   pseudogene = pseudogene_IGLV,
+#'   repertoire = repertoire, # notice here the vector is passed, NOT the entire data table!
+#'   blat_exec = blat
+#' )
+#'
+#' }
 #'
 #' @importFrom Biostrings readDNAStringSet writeXStringSet DNAStringSet pairwiseAlignment
 #' @importFrom stringr str_extract
@@ -35,7 +61,7 @@
 #'
 #' @export
 batchConvertAnalysis <- function(functional, pseudogene, repertoire,
-                                 blat_exec)
+                                 blat_exec, convertAA = TRUE)
 {
   if( !is.character( repertoire ))
     stop("'repertoire' should be a named vector of characters containing the IMGT-gapped DNA sequences you wish to analyse.")
@@ -52,6 +78,8 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
   blat_msg <- suppressWarnings( system( blat_exec, intern = TRUE ) )
   if( !grepl( "blat - Standalone BLAT", blat_msg[1] ) )
     stop("The BLAT executable does not appear to work. Are you sure you are given run privilege for the executable?")
+  if( !is.logical( convertAA ))
+    stop("'convertAA' must be either TRUE or FALSE.")
 
   seqnames <- names(repertoire)
   # read in functional gene
@@ -203,5 +231,9 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
     })
   }
   results <- do.call("rbind", results)
-  results
+  if( convertAA ){
+    results <- cbind( results, getAAGeneConversion( results, repertoire,
+                                                    functional = functional) )
+  }
+  results[, -which(colnames(results) == "allele")]
 }

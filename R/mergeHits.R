@@ -51,14 +51,14 @@ mergeHits <- function(hits, lut_functional)
                            end_ungapped = hits[1, "end_ungapped"],
                            stringsAsFactors = FALSE)
       }
-      hits <- ddply(hits, .variables = c("event", "fiveprime_identical_length",
-                                         "threeprime_identical_length" ,"edit_distance"),
-                    summarise,
-                    start = min(start), end = max(end),
-                    start_ungapped = min(start_ungapped),
-                    end_ungapped = max(end_ungapped),
-                    gene = paste(gene, collapse = ";")
-      )
+      hits <- do.call("ddply",
+                      list(hits,
+                           c("event", "fiveprime_identical_length", "threeprime_identical_length", "edit_distance"),
+                           summarise,
+                           start = call("min", as.symbol("start")), end = call("max", as.symbol("end")),
+                           start_ungapped = call("min", as.symbol("start_ungapped")),
+                           end_ungapped = call("max", as.symbol("end_ungapped")),
+                           gene = call("paste", as.symbol("gene"), collapse = ";")))
       return( hits[, c("start", "end", "gene",
                        "fiveprime_identical_length", "threeprime_identical_length",
                        "edit_distance", "start_ungapped", "end_ungapped")] )
@@ -107,6 +107,11 @@ mergeHits <- function(hits, lut_functional)
         names(fp) <- unlist(strsplit(hits[z-1, "gene"], split = ";"))
         hits[z, "fiveprime_identical_length"] <- paste(fp[names(edits)], collapse = ";")
         hits[z-1, "fiveprime_identical_length"] <- paste(fp[names(edits)], collapse = ";")
+        # copy over threeprime identity stretch length
+        tp <- unlist(strsplit(hits[z, "threeprime_identical_length"], split = ";"))
+        names(tp) <- unlist(strsplit(hits[z, "gene"], split = ";"))
+        hits[z, "threeprime_identical_length"] <- paste(tp[names(edits)], collapse = ";")
+        hits[z-1, "threeprime_identical_length"] <- paste(tp[names(edits)], collapse = ";")
         o <- paste(names(edits), collapse = ";")
         hits[z, "gene"] <- o; hits[z-1, "gene"] <- o
         hits[z, "event"] <- hits[z-1, "event"]
@@ -193,12 +198,14 @@ mergeHits <- function(hits, lut_functional)
     }
     o
   }))
-  hits <- ddply(hits, .variables = c("event", "fiveprime_identical_length", "threeprime_identical_length", "edit_distance"),
-                summarise,
-                start = min(start), end = max(end),
-                start_ungapped = min(start_ungapped), end_ungapped = max(end_ungapped),
-                gene = paste(gene, collapse = ";")
-  )
+  hits <- do.call("ddply",
+                  list(hits,
+                       c("event", "fiveprime_identical_length", "threeprime_identical_length", "edit_distance"),
+                       summarise,
+                       start = call("min", as.symbol("start")), end = call("max", as.symbol("end")),
+                       start_ungapped = call("min", as.symbol("start_ungapped")),
+                       end_ungapped = call("max", as.symbol("end_ungapped")),
+                       gene = call("paste", as.symbol("gene"), collapse = ";")))
   hits[, c("start", "end", "gene",
            "fiveprime_identical_length", "threeprime_identical_length",
            "edit_distance", "start_ungapped", "end_ungapped")]

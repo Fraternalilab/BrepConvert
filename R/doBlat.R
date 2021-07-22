@@ -9,6 +9,7 @@
 #' @importFrom Biostrings pairwiseAlignment pid start subseq
 #' @importFrom IRanges IRanges IRangesList reduce width shift
 #' @importFrom stringr fixed str_count
+#' @importFrom methods as
 #'
 doBlat <- function(seqname, repertoire, functional,
                    gapwidth = 3, flank=6)
