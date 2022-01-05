@@ -29,7 +29,7 @@ B cells are diversified in order to acquire the ability to recognise and respond
 
 # Installation
 
-To install the `BrepConvert` package, in R do:
+To install the `BrepConvert` package, in R (version $\geq 3.5.0$) do:
 
 ```{r, eval=FALSE}
 require(devtools)
