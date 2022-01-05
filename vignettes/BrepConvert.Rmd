@@ -25,7 +25,39 @@ knitr::opts_chunk$set(
 
 B cells are diversified in order to acquire the ability to recognise and respond against different immune challenges. The processes of diversification of the immunoglobulins B cells produced, both in the forms of B cell receptors and as secreted antibodies, are well studied in humans and a small handful of model organisms such as mice: processes like V(D)J gene recombination and somatic hypermutation introduces a great amount of sequence diversity into immunoglobulins. Such diversity is fine-tuned by Darwinian selection to remove those which express immunoglubilin target self-antigens, and expand those which are suitable to bind, recognise and respond against the immune challenge at hand. However, immunoglobulin sequence diversification is less characterised for species where a small handful of functional immunoglobulin gene segments exist, e.g. chickens where only 1 functional copy of V gene each for the heavy and light chain gene loci. In these systems we often observe long stretches of sequence in the transcribed immunoglobulins attributable to pseudogenes, a phenomenon known as **gene conversion**. While such observations have been previously reported, they are often small-scale samples of the immunoglobulin repertoire with manual annotation of gene conversion events, or studies without reported code base to reproduce such analysis.
 
-`BRepConvert` is an R package designed to automate the annotation of gene conversion events in immunoglobulin repertoire data. It uses a combination of pairwise global sequence alignment, BLAT (BLAST-like alignment tool) and arithmetic functionalities provided in base R to identify candidate gene conversion events, annotate donor pseudogenes, report associated statistics and provide basic plotting capabilities to visualise gene conversion on your data. 
+`BrepConvert` is an R package designed to automate the annotation of gene conversion events in immunoglobulin repertoire data. It uses a combination of pairwise global sequence alignment, BLAT (BLAST-like alignment tool) [@pmid11932250] and arithmetic functionalities provided in base R to identify candidate gene conversion events, annotate donor pseudogenes, report associated statistics and provide basic plotting capabilities to visualise gene conversion on your data. 
+
+# Installation
+
+To install the `BrepConvert` package, in R do:
+
+```{r, eval=FALSE}
+require(devtools)
+install_github('Fraternalilab/BrepConvert', ref = 'main')
+```
+
+The above should install `BrepConvert` itself as well as its R package dependencies.
+
+The only other prerequisite is an executable of the BLAT[@pmid11932250] program. This requires no installation; just downloading it from the [utilities section of the UCSC genome browser website](http://hgdownload.soe.ucsc.edu/admin/exe/) would suffice. You will indicate the filepath to the BLAT executable as an argument to the main function (see below).
+
+## Linux and MacOS
+
+Please follow the instructions above to install `BrepConvert` and download the BLAT executable. For Linux users, you can alternatively use the BLAT executable that is shipped with the installation of this package (this does not work with MacOS - you should download the executable from UCSC [see above]):
+
+```{r}
+# An executable of the BLAT program is also shipped with the package.
+blat <- system.file("exe/blat", package = "BrepConvert")
+# NOTE: This works for Linux OS only. For other OS, please download/compile
+# the executable and indicate the filepath like so:
+# blat <- "/home/abc/Documents/blat/blat"
+
+```
+
+The `BrepConvert` package has been tested on Linux and MacOS systems.
+
+## Windows
+
+The `BrepConvert` package has not been tested on Windows system. In theory installation of the `BrepConvert` package should work following the same instructions above. For BLAT, UCSC does not provide an executable BLAT software for Windows; others (e.g. [here](https://github.com/liangjiaoxue/AGEseq)) have provided BLAT executables on Windows; note that these have not been tested and are simply offered here as alternatives that you might want to try.
 
 # Example
 
@@ -75,17 +107,11 @@ functional_IGLV <- system.file("extdata/IMGT_Chicken_IGLV_F.fasta",
 pseudogene_IGLV <- system.file("extdata/IMGT_Chicken_IGLV_P.fasta",
                                package = "BrepConvert")
 
-# An executable of the BLAT program is also shipped with the package.
-blat <- system.file("exe/blat", package = "BrepConvert")
-# NOTE: This works for Linux OS only. For other OS, please download/compile
-# the executable and indicate the filepath like so:
-# blat <- "/home/abc/Documents/blat/blat"
-
 annotation <- batchConvertAnalysis(
   functional = functional_IGLV,
   pseudogene = pseudogene_IGLV,
   repertoire = repertoire, # notice here the vector is passed, NOT the entire table!
-  blat_exec = blat
+  blat_exec = blat # this is the filepath to the BLAT executable
 )
 
 # look at the annotation for sequence '3W-3'
@@ -113,24 +139,24 @@ As you can see, the output is a table consisting of results from all sequences p
 
 ## Visualisation
 
-The output from the `batchConvertAnalysis` is very rich; it would be handy to have a basic visualisation summarising the conversion events, and, if possible, highlight a few pseudogenes of interest.
+The output from the `batchConvertAnalysis` is very rich; it would be handy to have a basic visualisation summarising the conversion events, and, if possible, highlight a few pseudogenes of interest (Figure 1):
 
-```{r, fig.width=7, fig.height=6}
+```{r, fig.width=7, fig.height=6, fig.cap="Figure 1. Summary of gene conversion events in the analysed sequences. Thick bars correspond to the 'narrow' definition of boundaries, and thin bars correspond to the 'broad' definition. Gene conversion events attributable to specific IGLV donor pseudogenes are highlighted with different colours. "}
 plotEvents( annotation = annotation, repertoire = repertoire,
             show.sequence.names = TRUE, # recommended FALSE if you are visualising a lot of sequences!
             thickness = c(4, 1), # this controls the thickness of lines drawn
-            highlight.genes = c("IGLV1-2", "IGLV1-16", "IGLV1-22" )) # this is optionally; these donors will be highlighted with different colours
+            highlight.genes = c("IGLV1-2", "IGLV1-16", "IGLV1-22" )) # this is optional; these donors will be highlighted with different colours
 ```
 
-As described in the original paper we can observe much more prevasive gene conversion events in the sequences collected from three-weeks-stage chicken bursal cells (those sequences marked '3W-') compared to bursal cells collected from the 18-days embryos ('18D-'). We can compare this to the analysis presented in the original paper where the gene conversion events were identified manually:
+As described in the original paper [@pmid3100050] we can observe much more prevasive gene conversion events in the sequences collected from three-weeks-stage chicken bursal cells (those sequences marked '3W-') compared to bursal cells collected from the 18-days embryos ('18D-'). We can compare this to the analysis presented in the original paper where the gene conversion events were identified manually:
 
-![Figure 9 from the original paper, listing gene conversion events of a selection of the sequences included in our example. Vertical bars correspond to the boundaries of the gene conversion events; Dark dots denote DNA substitutions with no identified donors.](pmid3100050_Fig9.png)
+![Figure 2. Reproduced from ref. 2 Figure 9, listing gene conversion events of a selection of the sequences included in our example. Vertical bars correspond to the boundaries of the gene conversion events; Dark dots denote DNA substitutions with no identified donors.](pmid3100050_Fig9.png)
 
 Notwithstanding differences in the germline allele nomenclature (understandable given we use the up-to-date IMGT gene catalogue), `BrepConvert` provides a fast, reasonable accurate method to annotate gene conversion events over large samples of immunoglobulin sequences.
 
-We can further compare the 3W and 18D sequences using histograms. The following shows a histogram of *coverage* of gene conversion events - i.e. how often is a given DNA position implicated in a gene conversion event?
+We can further compare the 3W and 18D sequences using histograms. The following shows a histogram (Figure 3) of *coverage* of gene conversion events - i.e. how often is a given DNA position implicated in a gene conversion event?
 
-```{r, fig.width=7, fig.height=7}
+```{r, fig.width=7, fig.height=7, fig.cap = "Figure 3. Histograms showing the frequency of gene conversion events along the V gene, adopting the 'narrow' (top) and 'broad' (bottom) definitions."}
 # first add an extra column 'sequence_type' indicating whether
 # a sequence is from the 3W or 18D group
 annotation$sequence_type <- ifelse(grepl("^3W-", annotation$SeqID), "3W", "18D")
