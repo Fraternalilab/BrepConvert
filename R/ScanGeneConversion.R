@@ -171,7 +171,7 @@ ScanGeneConversion <- function(seqname, repertoire, functional,
   ungapped_sequence <- gsub(".", "", repertoire[seqname], fixed = TRUE)
   top_hits$seq_event <- apply(top_hits[, c("start_ungapped", "end_ungapped")],
                               MARGIN = 1, function(x){
-    toupper( as.character( Biostrings::subseq( ungapped_sequence, x[1], x[2]) ) )
+    try(toupper( as.character( Biostrings::subseq( ungapped_sequence, x[1], x[2]) ) ), silent = TRUE)
   })
 
   # get nearest AID motif
