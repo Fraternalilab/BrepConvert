@@ -169,8 +169,8 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
                          gapwidth = dist_cutoff[2])
     toBlat_gw3 <- toBlat_gw3[sapply(toBlat_gw3, function(x) !is.null(x))]
     toBlat_gw3 <- do.call("rbind", toBlat_gw3)
-    blat_gw3 <- blat(toBlat_gw3, database = tmpfile_p,
-                     blat_exec = blat_exec, min_score = 1)
+    blat_gw3 <- try( blat(toBlat_gw3, database = tmpfile_p,
+                          blat_exec = blat_exec, min_score = 1), silent = TRUE )
     if( is.data.frame(blat_gw3) ){
       if( nrow(blat_gw3) > 0 ){
         blat_gw3 <- formatBlat(blat_gw3, adjustment = dist_cutoff[2])
