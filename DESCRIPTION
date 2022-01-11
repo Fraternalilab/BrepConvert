@@ -1,7 +1,7 @@
 Package: BrepConvert
 Type: Package
 Title: BrepConvert: R package for gene conversion analysis of B cell repertoire
-Version: 0.1.0
+Version: 0.1.1
 Depends: R (>= 3.5.0)
 Authors@R: c( person( given = "Joseph", family = "Ng",
                       email = "joseph.chifung.ng@gmail.com", role = c( "aut", "cre" ) ) )
