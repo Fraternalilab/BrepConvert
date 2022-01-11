@@ -22,7 +22,10 @@ mergeHits <- function(hits, lut_functional)
         end = hits[1, "end"], gene = NA,
         fiveprime_identical_length = NA,
         threeprime_identical_length = NA,
-        edit_distance = NA, stringsAsFactors = FALSE
+        edit_distance = NA,
+        start_ungapped = hits[1, "start_ungapped"],
+        end_ungapped = hits[1, "end_ungapped"],
+        stringsAsFactors = FALSE
       ))
     } else {
       edits <- unlist(strsplit(hits[1, "edit_distance"], split = ";"))
