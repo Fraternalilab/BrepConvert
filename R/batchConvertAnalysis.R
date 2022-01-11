@@ -4,6 +4,7 @@
 #' @param pseudogene character, filepath to FASTA file containing DNA sequence(s) of the pseudogene V gene allele(s).
 #' @param repertoire a named vector of characters corresponding to IMGT-gapped DNA sequence from the BCR repertoire. The names are taken as the identifiers of the sequences. See examples below for suggestions on how to generate this from AIRR format repertoire data.
 #' @param blat_exec character, filepath to the executable of the BLAT program.
+#' @param dist_cutoff vector of 2 integers, 2 distance cut-offs to be used to merge adjacent events. Default = c(6, 3), i.e. the method first try to merge events which are at most 6bp apart to look for pseudogenes donor which can explain this one event; if not, it will try a more stringent cutoff of 3bp.
 #' @param convertAA Do you want amino acid sequences of the original, germline functional allele and the observed, converted segment? (default: TRUE)
 #'
 #' @description This is the main function of the \code{BrepConvert} package for users to annotate gene conversion events in BCR repertoire data, given DNA sequence sets of functional and pseudogene V gene alleles.
@@ -61,7 +62,7 @@
 #'
 #' @export
 batchConvertAnalysis <- function(functional, pseudogene, repertoire,
-                                 blat_exec, convertAA = TRUE)
+                                 blat_exec, dist_cutoff = c(6, 3), convertAA = TRUE)
 {
   if( !is.character( repertoire ))
     stop("'repertoire' should be a named vector of characters containing the IMGT-gapped DNA sequences you wish to analyse.")
@@ -78,6 +79,12 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
   blat_msg <- suppressWarnings( system( blat_exec, intern = TRUE ) )
   if( !grepl( "blat - Standalone BLAT", blat_msg[1] ) )
     stop("The BLAT executable does not appear to work. Are you sure you are given run privilege for the executable?")
+  if( length( dist_cutoff) != 2 )
+    stop("dist_cutoff should be a vector of 2 integers.")
+  if( class(dist_cutoff) != "numeric" )
+    stop("dist_cutoff should be a vector of 2 integers.")
+  dist_cutoff <- as.integer( dist_cutoff )
+  dist_cutoff <- sort( dist_cutoff, decreasing = TRUE )
   if( !is.logical( convertAA ))
     stop("'convertAA' must be either TRUE or FALSE.")
 
@@ -137,17 +144,17 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
   toBlat_gw6 <- lapply(names(repertoire), doBlat,
                        repertoire = repertoire,
                        functional = functional,
-                       gapwidth = 6)
+                       gapwidth = dist_cutoff[1])
   toBlat_gw6 <- toBlat_gw6[sapply(toBlat_gw6, function(x) !is.null(x))]
   toBlat_gw6 <- do.call("rbind", toBlat_gw6)
   blat_gw6 <- blat(toBlat_gw6, database = tmpfile_p,
                    blat_exec = blat_exec, min_score = 1)
-  blat_gw6 <- formatBlat(blat_gw6, adjustment = 6)
+  blat_gw6 <- formatBlat(blat_gw6, adjustment = dist_cutoff[1])
 
   results_gw6 <- lapply(names(repertoire), ScanGeneConversion, repertoire = repertoire,
                         functional = functional, pseudogenes = pseudogene,
                         blat_all = blat_gw6, blat_whole = blat_whole,
-                        lut = functional_mismatches, gapwidth = 6)
+                        lut = functional_mismatches, gapwidth = dist_cutoff[1])
   results_gw6 <- results_gw6[sapply(results_gw6, function(x) !is.null(x))]
   results_gw6 <- do.call("rbind", results_gw6)
 
@@ -159,18 +166,18 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
     toBlat_gw3 <- lapply(toSecondMap, doBlat,
                          repertoire = repertoire,
                          functional = functional,
-                         gapwidth = 3)
+                         gapwidth = dist_cutoff[2])
     toBlat_gw3 <- toBlat_gw3[sapply(toBlat_gw3, function(x) !is.null(x))]
     toBlat_gw3 <- do.call("rbind", toBlat_gw3)
     blat_gw3 <- blat(toBlat_gw3, database = tmpfile_p,
                      blat_exec = blat_exec, min_score = 1)
     if( is.data.frame(blat_gw3) ){
       if( nrow(blat_gw3) > 0 ){
-        blat_gw3 <- formatBlat(blat_gw3, adjustment = 6)
+        blat_gw3 <- formatBlat(blat_gw3, adjustment = dist_cutoff[2])
         results_gw3 <- lapply(toSecondMap, ScanGeneConversion, repertoire = repertoire,
                               functional = functional, pseudogenes = pseudogene,
                               blat_all = blat_gw3, blat_whole = blat_whole,
-			      lut = functional_mismatches, gapwidth = 3)
+			      lut = functional_mismatches, gapwidth = dist_cutoff[2])
         results_gw3 <- results_gw3[sapply(results_gw3, function(x) !is.null(x))]
         results_gw3 <- do.call("rbind", results_gw3)
       } else results_gw3 <- data.frame()
