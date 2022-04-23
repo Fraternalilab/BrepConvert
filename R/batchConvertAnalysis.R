@@ -96,7 +96,8 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
   names(pseudogene) <- stringr::str_extract(names(pseudogene), "IG.V[0-9A-Z\\-\\*]*\\||IG.V.*$")
   names(functional) <- gsub("|", "", names(functional), fixed = TRUE)
   names(pseudogene) <- gsub("|", "", names(pseudogene), fixed = TRUE)
-
+  names(functional)  <- gsub("[ ]*$", "", names(functional)) # Remove trailing spaces
+  names(pseudogene)  <- gsub("[ ]*$", "", names(pseudogene)) # Remove trailing spaces
   # write out an ungapped version of pseudogenes to tempfile for blat
   tmpfile_p <- tempfile()
   Biostrings::writeXStringSet(

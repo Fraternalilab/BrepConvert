@@ -127,8 +127,14 @@ getAAGeneConversion <- function(tb, repertoire, functional)
       stringi::stri_count_fixed(stringi::stri_sub(repertoire[unique(ttb$SeqID)], 1,
                                                   1:nchar(repertoire[unique(ttb$SeqID)])),
                                 pattern=".")
-    ttb$start <- sapply(ttb$start, function(x) boundary_map[x])
-    ttb$end <- sapply(ttb$end, function(x) boundary_map[x])
+    ttb$start <- sapply(ttb$start, function(x) {
+      if(! x %in% 1:nchar(repertoire[unique(ttb$SeqID)])) return(NA)
+      boundary_map[x]
+    })
+    ttb$end <- sapply(ttb$end, function(x) {
+      if(! x %in% 1:nchar(repertoire[unique(ttb$SeqID)])) return(NA)
+      boundary_map[x]
+    })
     ttb
   })
   tb <- do.call("rbind", tb)
