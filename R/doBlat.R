@@ -57,13 +57,13 @@ doBlat <- function(seqname, repertoire, functional,
   # adjust the positions to give start and end points in the ungapped version
   gaps <- as.data.frame( gaps )
   gaps$start_ungapped <- sapply(gaps[, 1], function(x){
-    n_dots <- stringr::str_count(substr(repertoire[seqname], start = 1, stop = x),
-                                 pattern = stringr::fixed("."))
+    n_dots <- stringr::str_count(substr(F_alignment@subject, start = 1, stop = x),
+                                 pattern = "[\\-\\.]")
     x - n_dots
   })
   gaps$end_ungapped <- sapply(gaps[, 2], function(x){
-    n_dots <- stringr::str_count(substr(repertoire[seqname], start = 1, stop = x),
-                                 pattern = stringr::fixed("."))
+    n_dots <- stringr::str_count(substr(F_alignment@subject, start = 1, stop = x),
+                                 pattern = "[\\-\\.]")
     x - n_dots
   })
   do.call("rbind", apply(gaps, 1, function(x){

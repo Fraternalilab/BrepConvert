@@ -58,7 +58,7 @@
 #'
 #' @importFrom Biostrings readDNAStringSet writeXStringSet DNAStringSet pairwiseAlignment
 #' @importFrom stringr str_extract
-#' @importFrom IRanges reduce IRangesList
+#' @importFrom IRanges reduce IRangesList intersect
 #'
 #' @export
 batchConvertAnalysis <- function(functional, pseudogene, repertoire,
@@ -200,8 +200,8 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
         for(i in 1:nrow(gw6)){
           if( is.na(gw6[i, "gene"]) ){
             a <- which(sapply(1:nrow(gw3), function(j){
-              intersection <- intersect( IRanges::IRanges(gw6[i, "start"], gw6[i, "end"]),
-                                         IRanges::IRanges(gw3[j, "start"], gw3[j, "end"]))
+              intersection <- IRanges::intersect( IRanges::IRanges(gw6[i, "start"], gw6[i, "end"]),
+                                                  IRanges::IRanges(gw3[j, "start"], gw3[j, "end"]))
               length(intersection) > 0
             }))
             if(length(a) > 0){
