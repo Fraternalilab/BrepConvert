@@ -40,4 +40,4 @@ The corresponding output file (in CSV format) is also uploaded into the `example
 
 # Cite
 
-Mallby J, Ng JCF, Stewart AS, Sinclair E, Dunn-Walters DK, Hershberg U. Chickens more than humans, focus the diversity of their immunoglobulin genes on the CDR and display polyspecific protein reactivity. *Under Review*.
+Mallby J, Ng JCF, Stewart AS, Sinclair E, Dunn-Walters DK, Hershberg U. Diversification of Antibodies by Gene Conversion in the Domestic Chicken (*Gallus gallus domesticus*). *Under Review*.
