@@ -16,7 +16,7 @@ install_github('Fraternalilab/BrepConvert', ref = 'main')
 
 This [vignette](http://htmlpreview.github.io/?https://github.com/Fraternalilab/BrepConvert/blob/main/vignettes/BrepConvert.html) contains examples on how to use `BrepConvert.`
 
-The analysis performed on Mallby et al. was performed as follows: IMGT-gapped V gene sequences were splitted into batches of 3000 sequences, each read into R as a named vector. One of these files is uploaded here in the directory `example`.
+The analysis performed on Mallaby et al. was performed as follows: IMGT-gapped V gene sequences were splitted into batches of 3000 sequences, each read into R as a named vector. One of these files is uploaded here in the directory `example`.
 
 The following shows the run-code to generate the result of this file via BrepConvert:
 
@@ -42,4 +42,4 @@ The corresponding output file (in CSV format) is also uploaded into the `example
 
 # Cite
 
-Mallby J, Ng JCF, Stewart AS, Sinclair E, Dunn-Walters DK, Hershberg U. Diversification of Antibodies by Gene Conversion in the Domestic Chicken (*Gallus gallus domesticus*). *Under Review*.
+Mallaby J, Ng JCF, Stewart AS, Sinclair E, Dunn-Walters DK, Hershberg U. Diversification of Antibodies by Gene Conversion in the Domestic Chicken (*Gallus gallus domesticus*). *Under Review*.
