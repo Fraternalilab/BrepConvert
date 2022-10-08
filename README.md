@@ -1,5 +1,7 @@
 # BrepConvert
-R package to analyse gene conversion events in immunoglobulin sequences
+
+ <img src="BrepConvert_logo.png" alt="logo" width="200" height="200">
+R package to analyse gene conversion events in immunoglobulin sequences.
 
 ## Install
 
