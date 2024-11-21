@@ -37,19 +37,25 @@ adjustBroadPos <- function(tb, repertoire)
     })
     ttb$threeprime_identical_length <- apply(ttb[, c("end", "threeprime_identical_length")],
                                              MARGIN = 1, function(x) {
-      actual <- boundary_map[x[1]] + x[2]
-      o <- which( boundary_map == actual )
+      if(x[1] <= length(boundary_map)){
+        actual <- boundary_map[x[1]] + x[2]
+      } else {
+        actual <- boundary_map[length(boundary_map)] + x[2]
+      }
+      if(all(actual > boundary_map)) o <- max(boundary_map)
+      else o <- which( boundary_map == actual )
       if( length( o ) > 1 ){
         # that must corresponds to a gap. take the outermost pos
         o <- max(o)
       }
-      o - x[1]
+      o <- o - x[1]
+      if(o < 0) return(x[2]) else return(o) # patch for now - threeprime identity calculation is tricky if gene conversion is at the end, here just use the original without correction
     })
+    ttb$soft_end <- ttb$end + ttb$threeprime_identical_length
+    ttb$soft_start <- ttb$start - ttb$fiveprime_identical_length
     ttb
   })
   tb <- do.call("rbind", tb)
-  tb$soft_end <- tb$end + tb$threeprime_identical_length
-  tb$soft_start <- tb$start - tb$fiveprime_identical_length
   tb
 }
 

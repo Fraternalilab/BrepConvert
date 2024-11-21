@@ -162,7 +162,7 @@ To mitigate this, from **version 0.2.0** onwards, we provide additional function
 # IMGT online webpages
 gene_order_table <- getGeneOrderTable(species = 'chicken', 
                                       locus = 'IGL')
-print(head(gene_order_table))
+print(gene_order_table[21:26, ])
 ```
 
 Here the column 'IMGT.locus.gene.order' gives the physical order of each germline VDJ (and C) gene at the chromosomal locus of the given species.
@@ -170,8 +170,8 @@ Here the column 'IMGT.locus.gene.order' gives the physical order of each germlin
 ```{r}
 # define a vector with the gene order
 # set gene name as the name for each element in this vector
-chicken_IgL_gene_order <- as.numeric(gene_order_table[[1]][, "IMGT.locus.gene.order"]) # force these into numbers
-names(chicken_IgL_gene_order) <- gene_order_table[[1]][, "IMGT.gene.name"]
+chicken_IgL_gene_order <- as.numeric(gene_order_table[, "IMGT.locus.gene.order"]) # force these into numbers
+names(chicken_IgL_gene_order) <- gene_order_table[, "IMGT.gene.name"]
 ```
 
 We can use this to filter the annotated potential pseudogene donors to only retain those which are physically plausible (i.e. the donor gene is at 5' of the acceptor gene):

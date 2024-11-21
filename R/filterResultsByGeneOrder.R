@@ -24,7 +24,7 @@ filterResultsByGeneOrder <- function(results, gene_order,
     } else {
       j = gene_order[functional_allele]
       donor_genes_to_keep <- names(gene_order[gene_order <= j])
-      tb$filtered_pseudogenes <- sapply(tb[, donor_allele_column], function(x){
+      tb$filtered_pseudogenes <- sapply(tb[, donor_allele_col], function(x){
         if(is.na(x)) return(x)
         all_genes <- unlist(strsplit(x, split = ";"))
         all_genes <- unique(sapply(all_genes, function(y){
@@ -36,5 +36,7 @@ filterResultsByGeneOrder <- function(results, gene_order,
       return(tb)
     }
   })
-  do.call("rbind", results)
+  results <- do.call("rbind", results)
+  rownames(results) <- NULL
+  results
 }
