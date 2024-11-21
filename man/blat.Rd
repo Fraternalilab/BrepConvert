@@ -4,7 +4,7 @@
 \alias{blat}
 \title{Function to run BLAT.}
 \usage{
-blat(sequenceTb, database, blat_exec, min_score = 20)
+blat(sequenceTb, database, blat_exec, min_score = 20, num_threads = 1)
 }
 \arguments{
 \item{sequenceTb}{data.frame, each row corresponding to one sequence to be queried using BLAT. The data frame consists of the following two columns:
@@ -18,6 +18,8 @@ blat(sequenceTb, database, blat_exec, min_score = 20)
 \item{blat_exec}{character, filepath to the executable of the BLAT program.}
 
 \item{min_score}{integer, minimum score to trigger a BLAT alignment, i.e. the \code{minScore} parameter in the command-line BLAT program (default: 20).}
+
+\item{num_threads}{number of threads to run BLAT. Only activate if pblat is passed in \code{blat_exec}.}
 }
 \description{
 This function invokes BLAT from the command line to search sequences given in \code{sequenceTb}, against FASTA sequences stored in the file \code{database}. The parameters used are: \code{-out=blast8 -tileSize=6 -stepSize=1}, and \code{minScore} given by the parameter \code{min_score} of this function. The results are written to a temporary file and then read in as a data frame.

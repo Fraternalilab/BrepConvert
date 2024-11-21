@@ -1,7 +1,7 @@
 Package: BrepConvert
 Type: Package
 Title: BrepConvert: R package for gene conversion analysis of B cell repertoire
-Version: 0.1.2
+Version: 0.2.0
 Depends: R (>= 3.5.0)
 Authors@R: c( person( given = "Joseph", family = "Ng",
                       email = "joseph.chifung.ng@gmail.com", role = c( "aut", "cre" ) ) )
@@ -11,7 +11,7 @@ Description: Package for automated gene conversion annotation and analysis of an
 License: GPL-3 + file LICENSE
 Encoding: UTF-8
 LazyData: true
-RoxygenNote: 7.1.0
+RoxygenNote: 7.1.1
 Suggests:
     knitr,
     rmarkdown,
@@ -28,4 +28,5 @@ Imports:
     S4Vectors,
     cowplot,
     scales,
-    tidyr
+    tidyr,
+    rvest

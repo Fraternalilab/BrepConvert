@@ -8,19 +8,27 @@
 #' @param database character, filepath to the FASTA file storing the sequence database to be searched against using BLAT.
 #' @param blat_exec character, filepath to the executable of the BLAT program.
 #' @param min_score integer, minimum score to trigger a BLAT alignment, i.e. the \code{minScore} parameter in the command-line BLAT program (default: 20).
+#' @param num_threads number of threads to run BLAT. Only activate if pblat is passed in \code{blat_exec}.
 #'
 #' @description This function invokes BLAT from the command line to search sequences given in \code{sequenceTb}, against FASTA sequences stored in the file \code{database}. The parameters used are: \code{-out=blast8 -tileSize=6 -stepSize=1}, and \code{minScore} given by the parameter \code{min_score} of this function. The results are written to a temporary file and then read in as a data frame.
 #'
 #' @importFrom utils read.table
 #'
-blat <- function(sequenceTb, database, blat_exec, min_score = 20)
+blat <- function(sequenceTb, database, blat_exec, min_score = 20, num_threads = 1)
 {
   if(!file.exists(blat_exec)){
     stop("BLAT executable does not exist. Are you sure you are passing the right filepath?")
   }
+  if(grepl("pblat", blat_exec) & num_threads == 1){
+    warning("You are using pblat but num_threads is set to 1. You can increase num_threads (please check your machine!) to enable parallelisation.")
+  }
   checkBlat <- suppressWarnings( system(blat_exec, intern = TRUE) )
-  if( !grepl("blat - Standalone BLAT", checkBlat[1], fixed = TRUE) ){
+  if( !grepl("blat - Standalone BLAT", checkBlat[1], fixed = TRUE) &&
+      !grepl("pblat - BLAT with parallel supports", checkBlat[1], fixed = TRUE)){
     stop("blat_exec does not point to the BLAT executable. Are you sure you are passing the right filepath?")
+  }
+  if(grepl("pblat", blat_exec) & num_threads > 1){
+    blat_exec <- paste0(blat_exec, " -threads=", num_threads)
   }
   if(!is.integer(as.integer(min_score))){
     stop("min_score should be an integer.")

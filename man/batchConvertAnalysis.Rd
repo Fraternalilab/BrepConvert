@@ -9,6 +9,8 @@ batchConvertAnalysis(
   pseudogene,
   repertoire,
   blat_exec,
+  blat_num_threads = 1,
+  dist_cutoff = c(6, 3),
   convertAA = TRUE
 )
 }
@@ -20,6 +22,10 @@ batchConvertAnalysis(
 \item{repertoire}{a named vector of characters corresponding to IMGT-gapped DNA sequence from the BCR repertoire. The names are taken as the identifiers of the sequences. See examples below for suggestions on how to generate this from AIRR format repertoire data.}
 
 \item{blat_exec}{character, filepath to the executable of the BLAT program.}
+
+\item{blat_num_threads}{number of threads to run BLAT. Only activate if pblat is passed in \code{blat_exec}.}
+
+\item{dist_cutoff}{vector of 2 integers, 2 distance cut-offs to be used to merge adjacent events. Default = c(6, 3), i.e. the method first try to merge events which are at most 6bp apart to look for pseudogenes donor which can explain this one event; if not, it will try a more stringent cutoff of 3bp.}
 
 \item{convertAA}{Do you want amino acid sequences of the original, germline functional allele and the observed, converted segment? (default: TRUE)}
 }
