@@ -47,6 +47,13 @@ Please follow the instructions above to install `BrepConvert` and download the B
 ```{r}
 # An executable of the BLAT program is also shipped with the package.
 blat <- system.file("exe/blat", package = "BrepConvert")
+
+# You can also use pblat, a parallelised version of BLAT
+# useful for processing large number of sequences
+# pblat can be installed following https://icebert.github.io/pblat/
+# in this case just pass the path to the pblat executable to the
+# variable 'blat'
+
 # NOTE: This works for Linux OS only. For other OS, please download/compile
 # the executable and indicate the filepath like so:
 # blat <- "/home/abc/Documents/blat/blat"
@@ -113,6 +120,9 @@ annotation <- batchConvertAnalysis(
   repertoire = repertoire, # notice here the vector is passed, NOT the entire table!
   blat_exec = blat # this is the filepath to the BLAT executable
 )
+# if using pblat, add 'blat_num_threads' as additional argument
+# to control number of threads for parallelisation
+# e.g. 'blat_num_threads = 4' for using 4 threads
 
 # look at the annotation for sequence '3W-3'
 print( annotation[ annotation$SeqID == "3W-3", ] )
@@ -135,7 +145,49 @@ As you can see, the output is a table consisting of results from all sequences p
 6. `AID_motif`: The closest DNA motif targetted by the AID enzyme is provided, together with its position (`nearest_AID_motif`) and its distance (in terms of number of nucleotides; column `distance_to_AID_motif`) from `start`.
 7. `seq_event`: The nucleotide sequence between `start` and `end`.
 8. `seq_5prime` and `seq_3prime`: The sequence stretch (10 nucleotides) 5' and 3' to the gene conversion event. This is useful to identify whether there are sequence motifs surrounding gene conversion events observed in a group of sequences.
-9. `germline`/`observed_AA`: amino acid sequence translated from the identified gene conversion events. Available for both `observed` (i.e. the sequence stretch observed) and `germline` (i.e. the same segment in the germline functional allele), and `narrow` (the region between `start` and `end`) and `broad` (`narrow` plus the flanking sequence identicated by `5'/3'_identical_lengths`) definitions of the gene conversion event.
+9. `allele`: the functional germline allele closest to the observed repertoire sequence.
+10. `germline`/`observed_AA`: amino acid sequence translated from the identified gene conversion events. Available for both `observed` (i.e. the sequence stretch observed) and `germline` (i.e. the same segment in the germline functional allele), and `narrow` (the region between `start` and `end`) and `broad` (`narrow` plus the flanking sequence identicated by `5'/3'_identical_lengths`) definitions of the gene conversion event.
+
+## Pruning results
+
+**New in version 0.2.0**
+
+The main BrepConvert pipeline illustrated above is highly flexible, and can be applied to study gene conversion in any species with germline gene repertoire data, for example those in the IMGT database. However, it only considers sequence identity between the observed sequence and the given functional genes/pseudogenes. Another crucial factor in gene conversion is the relative position of the donor and acceptor genes - because during V(D)J recombination intervening genomic segments between the recombined V, D and J genes were deleted, a donor gene cannot have been 3' of the chosen acceptor gene. This was not considered in BrepConvert, and as a result, depending on the genomic architecture of the immunoglobulin loci in the species of interest, this may affect the accuracy of BrepConvert results. 
+
+To mitigate this, from **version 0.2.0** onwards, we provide additional functions to get gene order (i.e. their physical location on the chromosomal locus) information from the IMGT database, and additionally prune the BrepConvert-annotated donor gene column (i.e. column `gene` above in the output from `batchConvertAnalysis` function) to remove those donor genes which are physically implausible.
+
+
+```{r}
+# the function getGeneOrderTable fetch information from the 
+# IMGT online webpages
+gene_order_table <- getGeneOrderTable(species = 'chicken', 
+                                      locus = 'IGL')
+print(gene_order_table[21:26, ])
+```
+
+Here the column 'IMGT.locus.gene.order' gives the physical order of each germline VDJ (and C) gene at the chromosomal locus of the given species.
+
+```{r}
+# define a vector with the gene order
+# set gene name as the name for each element in this vector
+chicken_IgL_gene_order <- as.numeric(gene_order_table[, "IMGT.locus.gene.order"]) # force these into numbers
+names(chicken_IgL_gene_order) <- gene_order_table[, "IMGT.gene.name"]
+```
+
+We can use this to filter the annotated potential pseudogene donors to only retain those which are physically plausible (i.e. the donor gene is at 5' of the acceptor gene):
+
+```{r}
+annotation2 <- filterResultsByGeneOrder(
+  annotation, 
+  gene_order = chicken_IgL_gene_order
+)
+# this should add a new column 'filtered_pseudogenes'
+# which is a version of the 'gene' column with the improbable
+# donors filtered out based on the gene order
+print(head(annotation2[, "filtered_pseudogenes", drop = FALSE]))
+```
+
+In this case, the newly added `filtered_pseudogenes` column should hold identical values as that of the `gene` column (except that in this case the allele identifiers [i.e. "*01", "*02" etc.] were stripped). This is because in the chicken IGL locus, the functional gene *IGLV1-1* is located 3' of all the pseudogenes. But this column will be handy in species where this may not be the case. 
 
 ## Visualisation
 

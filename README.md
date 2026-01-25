@@ -42,4 +42,4 @@ The corresponding output file (in CSV format) is also uploaded into the `example
 
 # Cite
 
-Mallaby J, Ng JCF, Stewart AS, Sinclair E, Dunn-Walters DK, Hershberg U. Diversification of Antibodies by Gene Conversion in the Domestic Chicken (*Gallus gallus domesticus*). *Under Review*.
+Mallaby J, Ng JCF, Stewart AS, Sinclair E, Dunn-Walters DK, Hershberg U. Diversification of Antibodies by Gene Conversion in the Domestic Chicken (*Gallus gallus domesticus*). *Discovery Immunology*, 2023,  Volume 2, Issue 1, 2023, kyad002, https://doi.org/10.1093/discim/kyad002.

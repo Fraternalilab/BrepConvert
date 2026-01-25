@@ -17,12 +17,9 @@ doBlat <- function(seqname, repertoire, functional,
   # Step (1) Alignment and identify stretches to be mapped
   # 1a. alignment
   # aln to every allele in the functional list. Take the allele with higher Sequence Identity.
-  aln <- lapply(functional, function(f){
-    F_alignment <- Biostrings::pairwiseAlignment(f, repertoire[seqname], type="global-local", gapOpening=20)#type = "local")
-    F_alignment
-  })
-  allele <- names(aln)[which.max(sapply(aln, Biostrings::pid))]
-  F_alignment <- aln[[which.max(sapply(aln, Biostrings::pid))]]
+  aln <-Biostrings::pairwiseAlignment(functional, repertoire[seqname], type="global-local", gapOpening=20)
+  allele <- names(aln)[which.max(Biostrings::pid(aln))]
+  F_alignment <- aln[which.max(Biostrings::pid(aln))]
   # 1b. if Percent ID is below 50 - likely it is an incomplete read; skip this.
   # If not aligned from the beginning of the leader, to be safe, filter away
   if( Biostrings::pid(F_alignment) < 50 ) return(NULL)

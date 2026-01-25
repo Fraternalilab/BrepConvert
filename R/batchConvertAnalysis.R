@@ -4,6 +4,7 @@
 #' @param pseudogene character, filepath to FASTA file containing DNA sequence(s) of the pseudogene V gene allele(s).
 #' @param repertoire a named vector of characters corresponding to IMGT-gapped DNA sequence from the BCR repertoire. The names are taken as the identifiers of the sequences. See examples below for suggestions on how to generate this from AIRR format repertoire data.
 #' @param blat_exec character, filepath to the executable of the BLAT program.
+#' @param blat_num_threads number of threads to run BLAT. Only activate if pblat is passed in \code{blat_exec}.
 #' @param dist_cutoff vector of 2 integers, 2 distance cut-offs to be used to merge adjacent events. Default = c(6, 3), i.e. the method first try to merge events which are at most 6bp apart to look for pseudogenes donor which can explain this one event; if not, it will try a more stringent cutoff of 3bp.
 #' @param convertAA Do you want amino acid sequences of the original, germline functional allele and the observed, converted segment? (default: TRUE)
 #'
@@ -62,7 +63,7 @@
 #'
 #' @export
 batchConvertAnalysis <- function(functional, pseudogene, repertoire,
-                                 blat_exec, dist_cutoff = c(6, 3), convertAA = TRUE)
+                                 blat_exec, blat_num_threads = 1, dist_cutoff = c(6, 3), convertAA = TRUE)
 {
   if( !is.character( repertoire ))
     stop("'repertoire' should be a named vector of characters containing the IMGT-gapped DNA sequences you wish to analyse.")
@@ -77,7 +78,8 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
   if( !file.exists( blat_exec ) )
     stop("'blat_exec' should be filepaths pointing to the BLAT executable.")
   blat_msg <- suppressWarnings( system( blat_exec, intern = TRUE ) )
-  if( !grepl( "blat - Standalone BLAT", blat_msg[1] ) )
+  if( !grepl("blat - Standalone BLAT", blat_msg[1], fixed = TRUE) &&
+      !grepl("pblat - BLAT with parallel supports", blat_msg[1], fixed = TRUE))
     stop("The BLAT executable does not appear to work. Are you sure you are given run privilege for the executable?")
   if( length( dist_cutoff) != 2 )
     stop("dist_cutoff should be a vector of 2 integers.")
@@ -127,7 +129,7 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
   blat_whole <- blat(data.frame(qname = seqnames,
                                 seq = gsub(".", "", repertoire, fixed = TRUE),
                                 stringsAsFactors = FALSE),
-                     database = tmpfile_p, blat_exec = blat_exec)
+                     database = tmpfile_p, blat_exec = blat_exec, num_threads = blat_num_threads)
   blat_whole[, "gene"] <- gsub("|", "",
                                stringr::str_extract(blat_whole[, "gene"],
                                                     "IG.V[0-9A-Z\\-\\*]*\\||IG.V.*$"),
@@ -243,5 +245,5 @@ batchConvertAnalysis <- function(functional, pseudogene, repertoire,
     results <- cbind( results, getAAGeneConversion( results, repertoire,
                                                     functional = functional) )
   }
-  results[, -which(colnames(results) == "allele")]
+  results# [, -which(colnames(results) == "allele")]
 }
